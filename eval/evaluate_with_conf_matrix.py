@@ -27,7 +27,7 @@ def log_confusion_matrix(preds, true, class_labels, save_path="confusion_matrix.
 def evaluate_with_conf_matrix(data_dir="data_csv", episodes=10):
     encoder = TinyCNNEncoder()
     optimizer = optim.Adam(encoder.parameters(), lr=0.001)
-    included_classes = ['normal', 'spike', 'drop', 'pattern']
+    included_classes = ['normal', 'lefturn', 'rightturn', 'noisy']
 
     for episode in range(episodes):
         data = load_episode_custom(data_dir, included_classes)
@@ -42,7 +42,7 @@ def evaluate_with_conf_matrix(data_dir="data_csv", episodes=10):
         dists = classify_queries(query_embed, prototypes)
         preds = torch.argmin(dists, dim=1)
         true = torch.tensor([classes.tolist().index(label.item()) for label in query_y])
-        all_class_names = ['normal', 'spike', 'drop', 'pattern']
+        all_class_names = ['normal', 'lefturn', 'rightturn', 'noisy']
         label_names = [all_class_names[i] for i in classes.tolist()]
         log_confusion_matrix(preds, true, class_labels=label_names, save_path="conf_matrix_eval.png")
 

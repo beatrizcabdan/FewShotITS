@@ -22,7 +22,7 @@ if __name__ == "__main__":
     encoder = TinyCNNEncoder()
     optimizer = optim.Adam(encoder.parameters(), lr=0.001)
     episodes = 20
-    included_classes = ['normal', 'spike', 'drop', 'pattern']
+    included_classes = ['normal', 'lefturn', 'rightturn', 'noisy']
 
     accuracies = []
     # full training runner with synthetic episodes (to improve embeddings)

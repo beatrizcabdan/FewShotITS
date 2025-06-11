@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_sample_sequences(data_dir, classes=['normal', 'spike', 'drop', 'pattern'], samples_per_class=2):
+def plot_sample_sequences(data_dir, classes=['normal', 'lefturn', 'rightturn', 'noisy'], samples_per_class=2):
     plt.figure(figsize=(15, 8))
     subplot_idx = 1
     for class_idx, cls in enumerate(classes):

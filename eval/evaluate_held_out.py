@@ -9,7 +9,7 @@ from utils.loader import load_episode_custom
 
 
 def load_data_by_class(data_dir, exclude_class=None):
-    classes = ['normal', 'spike', 'drop', 'pattern']
+    classes = ['normal', 'lefturn', 'rightturn', 'noisy']
     if exclude_class:
         classes = [cls for cls in classes if cls != exclude_class]
     return classes
@@ -26,7 +26,7 @@ def evaluate_on_held_out_class(data_dir, held_out, episodes=10, eval_repeats=10)
         train_one_episode(encoder, data, optimizer)
 
     # print(f"Evaluating adaptation to held-out class: {held_out}")
-    distractor = np.random.choice([c for c in ['normal', 'spike', 'drop', 'pattern'] if c != held_out])
+    distractor = np.random.choice([c for c in ['normal', 'lefturn', 'rightturn', 'noisy'] if c != held_out])
     held_out_classes = [held_out, distractor]
     adaptation_accuracies = []
 
@@ -52,7 +52,7 @@ def evaluate_on_held_out_class(data_dir, held_out, episodes=10, eval_repeats=10)
 
 
 def evaluate_all_held_out(data_dir="data_csv", episodes=10, eval_repeats=10):
-    classes = ['normal', 'spike', 'drop', 'pattern']
+    classes = ['normal', 'lefturn', 'rightturn', 'noisy']
     results = {}
     errors = {}
 
