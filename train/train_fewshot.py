@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 from model.proto_net import compute_prototypes, classify_queries
 
+
 # single-episode training logic
 def train_one_episode(encoder, data, optimizer):
 	# encoded support and query examples

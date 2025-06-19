@@ -1,37 +1,36 @@
 import torch
 import torch.optim as optim
 import numpy as np
-from model.encoder import TinyCNNEncoder
+from model.encoder import TinyMLEncoder
 from train.train_fewshot import train_one_episode
 from model.proto_net import compute_prototypes, classify_queries
 import matplotlib.pyplot as plt
-from utils.loader import load_episode_custom
+from train.episodic_loader import load_episode_1d
 
 
-def load_data_by_class(data_dir, exclude_class=None):
-    classes = ['normal', 'lefturn', 'rightturn', 'noisy']
+def load_data_by_class(classes, data_dir, exclude_class=None):
     if exclude_class:
         classes = [cls for cls in classes if cls != exclude_class]
     return classes
 
 
-def evaluate_on_held_out_class(data_dir, held_out, episodes=10, eval_repeats=10):
-    included_classes = load_data_by_class(data_dir, exclude_class=held_out)
-    encoder = TinyCNNEncoder()
-    optimizer = optim.Adam(encoder.parameters(), lr=0.001)
+def evaluate_on_held_out_class(classes, data_dir, held_out, episodes=10, eval_repeats=10):
+    included_classes = load_data_by_class(classes, data_dir, exclude_class=held_out)
+    encoder = TinyMLEncoder()
+    optimizer = optim.Adam(encoder.parameters(), lr=0.01)
 
     # print(f"Training on classes: {included_classes}, holding out: {held_out}")
     for episode in range(episodes):
-        data = load_episode_custom(data_dir, included_classes)
+        data = load_episode_1d(data_dir, included_classes, shot=5, query_per_class=50)
         train_one_episode(encoder, data, optimizer)
 
     # print(f"Evaluating adaptation to held-out class: {held_out}")
-    distractor = np.random.choice([c for c in ['normal', 'lefturn', 'rightturn', 'noisy'] if c != held_out])
+    distractor = np.random.choice([c for c in classes if c != held_out])
     held_out_classes = [held_out, distractor]
     adaptation_accuracies = []
 
     for _ in range(eval_repeats):
-        support_x, support_y, query_x, query_y = load_episode_custom(data_dir, held_out_classes)
+        support_x, support_y, query_x, query_y = load_episode_1d(data_dir, held_out_classes, shot=10, query_per_class=100)
         with torch.no_grad():
             support_embed = encoder(support_x)
             query_embed = encoder(query_x)
@@ -51,24 +50,24 @@ def evaluate_on_held_out_class(data_dir, held_out, episodes=10, eval_repeats=10)
     return mean_acc, std_acc
 
 
-def evaluate_all_held_out(data_dir="data_csv", episodes=10, eval_repeats=10):
-    classes = ['normal', 'lefturn', 'rightturn', 'noisy']
+def evaluate_all_held_out(classes, data_dir="data_csv", episodes=20, eval_repeats=10):
     results = {}
     errors = {}
 
     for held_out in classes:
-        mean_acc, std_acc = evaluate_on_held_out_class(data_dir, held_out, episodes, eval_repeats)
+        mean_acc, std_acc = evaluate_on_held_out_class(classes, data_dir, held_out, episodes, eval_repeats)
         results[held_out] = mean_acc
         errors[held_out] = std_acc
 
     # Plot with error bars
-    plt.figure(figsize=(8, 5))
+    plt.figure(figsize=(12, 5))
     plt.bar(results.keys(), results.values(), yerr=errors.values(), capsize=8)
     plt.ylim(0, 1.1)
     plt.ylabel("Accuracy")
     plt.title("Accuracy per held-out class")
-    plt.savefig("held_out_adaptation_accuracy.png")
+    plt.savefig("evaluate_held_out.png")
 
 
 if __name__ == "__main__":
-    evaluate_all_held_out(data_dir="../data/data_csv", eval_repeats=10)
+    classes = ['lefturn', 'rightturn', 'ra', 'lanechange', "lefttoright", "righttoleft", "stopinmiddle", "waittocross"]
+    evaluate_all_held_out(data_dir="../data/data_csv", episodes=5, eval_repeats=5, classes=classes)

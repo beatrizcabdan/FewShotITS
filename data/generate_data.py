@@ -159,6 +159,6 @@ def save_sequences(output_dir="data/data_csv", num_samples=1000, noise_std=2.0):
 
 
 if __name__ == "__main__":
-    noise_std = 0.01
+    noise_std = 0.04
     save_sequences(noise_std=noise_std, output_dir="data/data_csv")  # synthetic training set generator
     save_sequences(noise_std=noise_std, output_dir="data/test_csv")  # synthetic training set generator
