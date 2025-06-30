@@ -6,7 +6,8 @@ from train.train_fewshot import train_one_episode
 from model.proto_net import compute_prototypes, classify_queries
 import matplotlib.pyplot as plt
 from train.episodic_loader import load_episode_1d
-
+import time
+import pandas as pd
 
 def load_data_by_class(classes, data_dir, exclude_class=None):
     if exclude_class:
@@ -19,12 +20,10 @@ def evaluate_on_held_out_class(classes, data_dir, held_out, episodes=10, eval_re
     encoder = TinyMLEncoder()
     optimizer = optim.Adam(encoder.parameters(), lr=0.01)
 
-    # print(f"Training on classes: {included_classes}, holding out: {held_out}")
     for episode in range(episodes):
         data = load_episode_1d(data_dir, included_classes, shot=5, query_per_class=50)
         train_one_episode(encoder, data, optimizer)
 
-    # print(f"Evaluating adaptation to held-out class: {held_out}")
     distractor = np.random.choice([c for c in classes if c != held_out])
     held_out_classes = [held_out, distractor]
     adaptation_accuracies = []
@@ -68,6 +67,74 @@ def evaluate_all_held_out(classes, data_dir="data_csv", episodes=20, eval_repeat
     plt.savefig("evaluate_held_out.png")
 
 
+def evaluate_acc_time(data_dir="../data/data_csv", episodes=50):
+    # classes = ['lefturn', 'rightturn', 'ra', 'lanechange']
+    # classes = ["lefttoright", "righttoleft", "stopinmiddle", "waittocross"]
+    allclasses = ['lefturn', 'rightturn', 'ra', 'lanechange', "lefttoright", "righttoleft", "stopinmiddle", "waittocross"]
+    way = "_8"
+
+    dflist = []
+    for held_out in allclasses*5:  # evaluate_on_held_out_class
+        included_classes = load_data_by_class(allclasses, data_dir, exclude_class=held_out)
+
+        encoder = TinyMLEncoder()
+        optimizer = optim.Adam(encoder.parameters(), lr=0.01)
+
+        # TRAINING
+        for episode in range(episodes):
+            data = load_episode_1d(data_dir, included_classes, shot=5, query_per_class=20)
+            train_one_episode(encoder, data, optimizer)
+
+        maxacc = 0
+        for numshots in range(0, 6):
+            numshots = 2 ** numshots
+            for numqueries in [100]:
+
+                distractor = np.random.choice([c for c in allclasses if c != held_out])
+                distractor1 = np.random.choice([c for c in allclasses if c != held_out and c!= distractor])
+                # held_out_classes = [held_out, distractor]  # these are what will be compared
+                held_out_classes = [held_out, distractor, distractor1]  # these are what will be compared
+                held_out_classes = allclasses
+                support_x, support_y, query_x, query_y = load_episode_1d(data_dir, held_out_classes, shot=numshots, query_per_class=numqueries)
+
+                start = time.time()
+                ############################
+                with torch.no_grad():
+                    support_embed = encoder(support_x)
+                    query_embed = encoder(query_x)
+                    # TESTING (MEASURE THIS)
+                    prototypes, classes = compute_prototypes(support_embed, support_y)
+                    dists = classify_queries(query_embed, prototypes)
+                ############################
+                end = time.time()
+                elapsed_ms = (end - start) * 1000
+
+                preds = torch.argmin(dists, dim=1)
+                classes = torch.unique(support_y)
+                true = torch.tensor([classes.tolist().index(label.item()) for label in query_y])
+                acc = (preds == true).float().mean().item()
+
+                target_index = held_out_classes.index(held_out)
+                mask = true == target_index
+                acc = (preds[mask] == true[mask]).float().mean().item()
+
+                # acc = max(acc, maxacc)
+                # maxacc = acc
+
+                print(held_out, numqueries, numshots, acc, elapsed_ms)
+                dflist.append({'numepisodes': episodes, 'numqueries': numqueries, 'numshots': numshots, 'acc': acc, 'elapsed_ms': int(elapsed_ms), "held_out": held_out})
+
+            df = pd.DataFrame(dflist)
+            pivot_table = df.pivot_table(index="numqueries", columns="numshots", values="acc", aggfunc="mean")
+            pivot_table.round(2).to_csv("queries_vs_shots" + way + ".csv")
+            pivot_table = df.pivot_table(index="held_out", columns="numshots", values="acc", aggfunc="mean")
+            pivot_table.round(2).to_csv("heldout_vs_shots" + way + ".csv")
+            pivot_table = df.pivot_table(index="numqueries", columns="numshots", values="elapsed_ms", aggfunc="mean")
+            pivot_table.round(2).to_csv("queries_vs_shots_time" + way + ".csv")
+
+
 if __name__ == "__main__":
     classes = ['lefturn', 'rightturn', 'ra', 'lanechange', "lefttoright", "righttoleft", "stopinmiddle", "waittocross"]
-    evaluate_all_held_out(data_dir="../data/data_csv", episodes=5, eval_repeats=5, classes=classes)
+    # evaluate_all_held_out(data_dir="../data/data_csv", episodes=5, eval_repeats=5, classes=classes)
+    evaluate_acc_time(data_dir="../data/data_csv")
+

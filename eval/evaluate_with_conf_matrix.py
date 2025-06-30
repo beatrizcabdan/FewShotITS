@@ -10,7 +10,7 @@ from model.encoder import TinyMLEncoder
 from train.train_fewshot import train_one_episode
 from model.proto_net import compute_prototypes, classify_queries
 from train.episodic_loader import load_episode_1d
-
+import time
 
 def log_confusion_matrix(preds, true, class_labels, save_path="confusion_matrix.png"):
     cm = confusion_matrix(true.numpy(), preds.numpy(), labels=range(len(class_labels)))
@@ -55,6 +55,7 @@ def evaluate_with_conf_matrix(data_dir="../data/data_csv", test_dir="../data/tes
         label_names = [included_classes[i] for i in classes.tolist()]
         log_confusion_matrix(preds, true, class_labels=label_names, save_path="evaluate_with_conf_matrix.png")
 
-
 if __name__ == "__main__":
     evaluate_with_conf_matrix(data_dir="../data/data_csv")
+    # evaluate_acc_time(data_dir="../data/data_csv")
+

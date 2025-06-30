@@ -1,12 +1,18 @@
+"""
+THIS IS A PRELIMINARY VERSION, THE RESULTS IN THE PAPER ARE GENERATED USING CHAOS AND UMANS
+ALL INFORMATION AND CODE: https://project.inria.fr/crowdscience/project/ocsr/umans/
+"""
+
 from PIL import Image, ImageDraw
 import os
 import zCurve as z
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import random
 
 def generate_image_data(classes, frame_width=10, frame_height=6, num_frames=30, samples=5):
-	square_size = 1
+	square_size = 1 #1
 
 	for cls in classes:
 		output_dir = "data_img/"+cls
@@ -29,7 +35,7 @@ def generate_image_data(classes, frame_width=10, frame_height=6, num_frames=30, 
 					x = frame_width // 3 + np.sin(np.pi * 2 * (i / num_frames))
 				y = (frame_height - square_size) // 2
 
-				sizechange = 0.2*np.sin(np.pi * 2 * (i / num_frames) + s)  # vary square width as leg movement sim
+				sizechange = 0.2*np.sin(np.pi * 2 * (i / num_frames) + s) * random.randint(1,3) # vary square width as leg movement sim
 
 				draw.rectangle([x, y, x + square_size + sizechange, y + square_size*2], fill="yellow")
 				os.makedirs(output_dir+"/"+cls+f"_{s:03d}", exist_ok=True)
@@ -111,10 +117,10 @@ def plot_sfc_images2(classes):
 
 
 if __name__ == "__main__":
-	classes = ["lefttoright", "righttoleft", "stopinmiddle", "waittocross", 'lefturn', 'rightturn', 'ra', 'lanechange']
-	img_width = 10
-	img_height = 6
-	generate_image_data(classes, img_width, img_height, samples=5)
-	encode_images(classes, img_width, img_height)
+	classes = ["lefttoright", "righttoleft", "stopinmiddle", "waittocross"]
+	img_width = 10 #112
+	img_height = 6 #112
+	generate_image_data(classes, img_width, img_height, samples=300)
+	# encode_images(classes)
 	# plot_sfc_images(classes)
-	plot_sfc_images2(classes)
+	# plot_sfc_images2(classes)
